@@ -4,7 +4,6 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from fastapi.responses import JSONResponse
 from datetime import datetime
-from procesos import notificaciones
 import logging,traceback
 from sqlalchemy import create_engine,text
 import os
