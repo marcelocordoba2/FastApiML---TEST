@@ -98,7 +98,7 @@ class cliente:
             self.offset=0
             self.limit = 50
             self.fecha_hasta = datetime.today() 
-            self.fecha_desde = (datetime.today() - timedelta(days=366))
+            self.fecha_desde = (datetime.today() - timedelta(days=10))
             
             self.order_id = None
             self.shipping_id = None
