@@ -7,7 +7,7 @@ from mercadolibre import utils
 from pandas import json_normalize
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-import time, os, logging
+import time, os, logging, traceback
 
 
 carpeta_logs = 'logs'
@@ -28,7 +28,7 @@ class notification:
             self.db.cargar_notificacion(noti_df)
             return 200
         except Exception as e:
-            logging.error(f"Error inesperado: {e}")
+            logging.error(f"Error registrar_notificacion: {e} \n {traceback.format_exc()}")
             return 400
 
 # CLASE CLIENTE_______________________________________________________________________________________
@@ -42,25 +42,29 @@ class cliente:
             self.code = code
             
             datos = self.db.cargar_app(self.site)
+
             self.app_id = datos[0]
             self.client_secret = datos[1]
             self.redirect_uri = datos[2]
             
             respuesta = funciones_ml.get_token(self)
+            print(respuesta.text)
             respuesta = json.loads(respuesta.text)
-            
+            print(respuesta)
             self.access_token=respuesta['access_token']
             self.user_id=respuesta['user_id']
             self.refresh_token=respuesta['refresh_token'] 
             
             respuesta=funciones_ml.users_me(self) 
             respuesta = json.loads(respuesta.text)
+            print(respuesta)
             self.nickname = respuesta['nickname']
             
             resp = self.db.consulta_cliente(self.user_id)
             if resp[0] == 0:
                 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 datos = (self.app_id,self.code,self.access_token,self.user_id,self.refresh_token,self.nickname,current_time)
+                print(datos)
                 self.db.insert(datos)
             else:
                 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -69,10 +73,10 @@ class cliente:
                 
             return 200
         except KeyError as e:
-            logging.error(f"Error: Clave faltante - {e}")
+            logging.error(f"Error: Clave faltante - {e} \n {traceback.format_exc()}")
             return 400
         except Exception as e:
-            logging.error(f"Error inesperado: {e}")
+            logging.error(f"Error nuevo: {e} \n {traceback.format_exc()}")
             return 400
         
     def existente(self,user_id):
@@ -98,7 +102,7 @@ class cliente:
             self.offset=0
             self.limit = 50
             self.fecha_hasta = datetime.today() 
-            self.fecha_desde = (datetime.today() - timedelta(days=10))
+            self.fecha_desde = (datetime.today() - timedelta(days=366))
             
             self.order_id = None
             self.shipping_id = None
@@ -106,7 +110,7 @@ class cliente:
             
             return 200
         except Exception as e:
-            logging.error(f"Error inesperado: {e}")
+            logging.error(f"Error existente: {e} \n {traceback.format_exc()}")
             return 400
             
     def ordenes_historicas(self,user_id):
@@ -139,7 +143,7 @@ class cliente:
             
             return 200
         except Exception as e:
-            logging.error(f"Error inesperado: {e}")
+            logging.error(f"Error ordenes_historicas: {e} \n {traceback.format_exc()}")
             return 400     
      
     def cargar_ordenes(self,user_id,ordenes_a_cargar):
@@ -179,7 +183,7 @@ class cliente:
         
             return 200
         except Exception as e:
-            logging.error(f"Error inesperado: {e}")
+            logging.error(f"Error cargar_ordenes: {e} \n {traceback.format_exc()}")
             return 400 
 
     def cargar_envios(self,user_id):
@@ -207,7 +211,7 @@ class cliente:
             self.db.cargar_envios(envio_df)
             return 200
         except Exception as e:
-            logging.error(f"Error inesperado: {e}")
+            logging.error(f"Error cargar_envios: {e} \n {traceback.format_exc()}")
             return 400
 
     def items(self, user_id):
@@ -286,7 +290,7 @@ class cliente:
             self.db.cargar_items(items,atributos,variaciones)
             return 200
         except Exception as e:
-            logging.error(f"Error inesperado: {e}")
+            logging.error(f"Error items: {e} \n {traceback.format_exc()}")
             return 400
             
     def preguntas(self,user_id):
@@ -307,7 +311,7 @@ class cliente:
              
             return 200
         except Exception as e:
-            logging.error(f"Error inesperado: {e}")
+            logging.error(f"Error preguntas: {e} \n {traceback.format_exc()}")
             return 400
         
     def publicidad(self,user_id):
@@ -394,7 +398,7 @@ class cliente:
             self.db.cargar_publicidad(campañas,anuncios,metricas_anuncios)
             return 200
         except Exception as e:
-            logging.error(f"Error inesperado: {e}")
+            logging.error(f"Error publicidad: {e} \n {traceback.format_exc()}")
             return 400       
      
     def act_preguntas(self,user_id,preguntas):
@@ -415,7 +419,7 @@ class cliente:
              
             return 200
         except Exception as e:
-            logging.error(f"Error inesperado: {e}")
+            logging.error(f"Error act_preguntas: {e} \n {traceback.format_exc()}")
             return 400
             
     def act_items(self,user_id,item): ## PENDIENTE DE TERMINAR
@@ -424,7 +428,7 @@ class cliente:
                         
             return 200
         except Exception as e:
-            logging.error(f"Error inesperado: {e}")
+            logging.error(f"Error act_items: {e} \n {traceback.format_exc()}")
             return 400
         
 
@@ -527,20 +531,29 @@ class HandleDB():
         return data
     
     def update_user(self, datos):
-        update_query = """
-            UPDATE conexion_clientes 
-            SET code = %s, access_token = %s, refresh_token = %s,nickname = %s, last_updated = %s
-            WHERE user_id = %s
-        """
-        self._cur.execute(update_query, datos)
-        self._con.commit()
+        try:
+            update_query = """
+                UPDATE conexion_clientes 
+                SET code = %s, access_token = %s, refresh_token = %s,nickname = %s, last_updated = %s
+                WHERE user_id = %s
+            """
+            self._cur.execute(update_query, datos)
+            self._con.commit()
+        except Exception as e:
+            logging.error(f"Error HandlerDB: {e} \n {traceback.format_exc()}\n{traceback.format_exc()}")
+            raise
+        
 
     def insert(self, datos):
-        self._cur.execute(
-            "INSERT INTO conexion_clientes VALUES(%s, %s, %s, %s, %s, %s)",
-            datos
-        )
-        self._con.commit()
+        try:
+            self._cur.execute(
+                "INSERT INTO conexion_clientes (app_id, code, access_token, user_id, refresh_token, nickname, last_updated) VALUES(%s, %s, %s, %s, %s, %s, %s)",
+                datos
+            )
+            self._con.commit()
+        except Exception as e:
+            logging.error(f"Error HandlerDB: {e} \n {traceback.format_exc()}\n{traceback.format_exc()}")
+            raise
 
     def datos_aplicaciones(self,aplicacion):
         self._cur.execute(f"select site, client_secret, uri from aplicaciones where app_id = {str(aplicacion)}")
