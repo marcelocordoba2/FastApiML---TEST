@@ -51,8 +51,7 @@ async def webhook(request: Request):
 
 @app.get('/MLA_redirect')
 async def redireccionamiento(code: str = Query(...)):
-    return code
-    """
+  
     try:
         cli = cliente()  
         cli.nuevo("MLA",code)  
@@ -61,7 +60,7 @@ async def redireccionamiento(code: str = Query(...)):
         traza_pila = traceback.format_exc()
         logging.error(f'Error al procesar la notificación: {e}\n{traza_pila }')
         raise HTTPException(status_code=500, detail='Internal Server Error')
-"""
+
     
 @app.get('/MLU_redirect')
 async def redireccionamiento(code: str = Query(...)):
